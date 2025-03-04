@@ -1,0 +1,71 @@
+namespace: "apps"
+
+replicaCount: 1
+
+image:
+  repository: ocantov/fantastic-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+env:
+  DB_NAME: "dev"
+
+service:
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "alb"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ""
+  port: 443
+  targetPort: 5000
+  protocol: TCP
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "250m"
+  limits:
+    memory: "128Mi"
+    cpu: "500m"
+
+livenessProbe:
+  path: /health
+  port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
+readinessProbe:
+  path: /readiness
+  port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+db:
+  host: ""
+  name: ""
+  userSecretName: "db-secrets"
+  userSecretKey: "DB_USER"
+  passwordSecretKey: "DB_PASSWORD"
+  image: "postgres:latest"
+  user: ""
+  password: ""
+
+migration:
+  script:
+    name: "schema.sql"
+    content: |
+      -- Create users table
+      CREATE TABLE users (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          lastname VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL
+      );
+

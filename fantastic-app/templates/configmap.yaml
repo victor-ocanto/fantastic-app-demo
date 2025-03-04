@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: migration-configmap
+  namespace: {{ .Release.Namespace }}
+data:
+  schema.sql: |
+    {{ .Values.migration.script.content | nindent 4 }}

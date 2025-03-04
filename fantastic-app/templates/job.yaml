@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    spec:
+      containers:
+      - name: migrate
+        image: {{ .Values.db.image }}
+        command: [ "sh", "-c", "PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f /migrations/schema.sql" ]
+        env:
+        - name: DB_HOST
+          value: {{ .Values.db.host }} 
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.db.userSecretName }}
+              key: {{ .Values.db.userSecretKey }}
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.db.userSecretName }}
+              key: {{ .Values.db.passwordSecretKey }}
+        - name: DB_NAME
+          value: {{ .Values.db.name }}
+        volumeMounts:
+        - name: migration-volume
+          mountPath: "/migrations"
+      volumes:
+      - name: migration-volume
+        configMap:
+          name: migration-configmap
+      restartPolicy: Never
+  backoffLimit: 4
